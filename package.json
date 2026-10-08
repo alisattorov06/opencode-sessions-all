@@ -1,0 +1,44 @@
+{
+  "name": "opencode-sessions-all",
+  "version": "0.1.0",
+  "description": "OpenCode TUI plugin: all sessions from all projects, grouped by project, in the sidebar",
+  "type": "module",
+  "exports": {
+    "./tui": "./dist/tui.js"
+  },
+  "files": [
+    "dist",
+    "src",
+    "tui.js",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "tui",
+    "sessions",
+    "sidebar"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@opencode/plugin": ">=2.0.24",
+    "@opentui/core": ">=0.5.14",
+    "@opentui/solid": ">=0.5.14",
+    "solid-js": ">=1.9.0"
+  },
+  "devDependencies": {
+    "@opencode/plugin": "^2.0.24",
+    "@opentui/core": "^0.5.14",
+    "@opentui/solid": "^0.5.14",
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.25.0",
+    "esbuild-plugin-solid": "^0.5.0",
+    "solid-js": "^1.9.0",
+    "typescript": "^5.8.0"
+  }
+}
