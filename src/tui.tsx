@@ -1,6 +1,7 @@
 /** @jsxImportSource @opentui/solid */
 
 import type { JSX } from "@opentui/solid"
+import type { MouseEvent } from "@opentui/core"
 import type { Plugin } from "@opencode/plugin/tui"
 import { For, Show, createMemo, createSignal, onCleanup, onMount } from "solid-js"
 
@@ -114,6 +115,39 @@ function AllSessions(props: { context: Ctx; sessionID: string }): JSX.Element {
     }).catch(() => {})
   }
 
+  // Delete-arm state: first click on a row's × arms it, second click deletes.
+  const [confirmDelete, setConfirmDelete] = createSignal<string | null>(null)
+  const [deleteError, setDeleteError] = createSignal<{ id: string; message: string } | null>(null)
+  let confirmTimer: ReturnType<typeof setTimeout> | undefined
+  let errorTimer: ReturnType<typeof setTimeout> | undefined
+
+  onCleanup(() => {
+    clearTimeout(confirmTimer)
+    clearTimeout(errorTimer)
+  })
+
+  async function deleteSession(e: MouseEvent, id: string) {
+    // The × sits inside the row's navigate box; stop the event bubbling up to it.
+    e.stopPropagation()
+    if (confirmDelete() !== id) {
+      setDeleteError(null)
+      clearTimeout(confirmTimer)
+      setConfirmDelete(id)
+      confirmTimer = setTimeout(() => setConfirmDelete(null), 4000)
+      return
+    }
+    setConfirmDelete(null)
+    clearTimeout(confirmTimer)
+    try {
+      await ctx.client.session.remove({ sessionID: id })
+      await refresh(ctx)
+    } catch {
+      setDeleteError({ id, message: "Delete failed" })
+      clearTimeout(errorTimer)
+      errorTimer = setTimeout(() => setDeleteError(null), 5000)
+    }
+  }
+
   onMount(() => {
     void refresh(ctx)
     const offs = [
@@ -162,6 +196,10 @@ function AllSessions(props: { context: Ctx; sessionID: string }): JSX.Element {
                   {(s) => {
                     const active = s.id === props.sessionID
                     const title = s.title?.trim() || projectLabel(projects(), s) || "Untitled"
+                    const err = deleteError()
+                    const rowError = err && err.id === s.id ? err.message : null
+                    const armed = confirmDelete() === s.id
+                    const label = rowError ?? (armed ? "Delete? Press again" : null)
                     return (
                       <box minWidth={0} flexDirection="row" gap={1} onMouseUp={() => goto(ctx, s.id)}>
                         <text flexShrink={0} fg={active ? theme.text.base : theme.text.muted}>
@@ -180,6 +218,11 @@ function AllSessions(props: { context: Ctx; sessionID: string }): JSX.Element {
                         <text flexShrink={0} fg={theme.text.muted}>
                           {relTime(s.time.updated)}
                         </text>
+                        <box flexShrink={0} onMouseUp={(e) => void deleteSession(e, s.id)}>
+                          <text fg={armed || rowError ? theme.text.feedback.error.base : theme.text.muted}>
+                            {armed || rowError ? <b>{label ? `× ${label}` : "×"}</b> : "×"}
+                          </text>
+                        </box>
                       </box>
                     )
                   }}
